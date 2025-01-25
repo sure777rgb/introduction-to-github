@@ -1,0 +1,43 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Dict
+
+app = FastAPI()
+
+# Models for input and output
+class OddsInput(BaseModel):
+    event: str
+    odds: Dict[str, float]  # Example: {"bookie1": 2.1, "bookie2": 1.9}
+
+class SurebetOutput(BaseModel):
+    event: str
+    is_surebet: bool
+    profit_percent: float
+    bets: Dict[str, float]  # How much to bet on each bookie
+
+# Utility function to calculate surebet
+def calculate_surebet(odds: Dict[str, float]):
+    reciprocal_sum = sum(1 / odd for odd in odds.values())
+    if reciprocal_sum < 1:
+        profit_percent = (1 - reciprocal_sum) * 100
+        # Calculate proportional bets
+        total_investment = 100  # Assume we want to bet $100 in total
+        bets = {bookie: total_investment / (odd * reciprocal_sum) for bookie, odd in odds.items()}
+        return True, profit_percent, bets
+    return False, 0.0, {}
+
+# Endpoint to calculate surebets
+@app.post("/surebets", response_model=SurebetOutput)
+def get_surebets(input_data: OddsInput):
+    is_surebet, profit_percent, bets = calculate_surebet(input_data.odds)
+    return SurebetOutput(
+        event=input_data.event,
+        is_surebet=is_surebet,
+        profit_percent=profit_percent,
+        bets=bets
+    )
+
+# Example route to test the API
+@app.get("/")
+def read_root():
+    return {"message": "Surebets API is running!"}
