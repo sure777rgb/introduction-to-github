@@ -1,0 +1,70 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+export default function SurebetsDashboard() {
+  const [surebets, setSurebets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch surebets from the backend
+  useEffect(() => {
+    const fetchSurebets = async () => {
+      try {
+        const response = await axios.post("http://127.0.0.1:8000/surebets", {
+          event: "Example Match",
+          odds: {
+            bookie1: 2.1,
+            bookie2: 1.9,
+          },
+        });
+        setSurebets([response.data]); // Simulate multiple surebets
+      } catch (error) {
+        console.error("Error fetching surebets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurebets();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Surebets Dashboard</h1>
+
+      {loading ? (
+        <p className="text-gray-600">Loading surebets...</p>
+      ) : surebets.length > 0 ? (
+        <div className="w-full max-w-4xl bg-white shadow-md rounded-2xl p-6">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="border-b p-2 font-medium text-gray-600">Event</th>
+                <th className="border-b p-2 font-medium text-gray-600">Profit (%)</th>
+                <th className="border-b p-2 font-medium text-gray-600">Bets</th>
+              </tr>
+            </thead>
+            <tbody>
+              {surebets.map((surebet, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border-b p-2 text-gray-800">{surebet.event}</td>
+                  <td className="border-b p-2 text-green-600 font-bold">
+                    {surebet.profit_percent.toFixed(2)}%
+                  </td>
+                  <td className="border-b p-2 text-gray-800">
+                    {Object.entries(surebet.bets).map(([bookie, bet]) => (
+                      <div key={bookie}>
+                        {bookie}: ${bet.toFixed(2)}
+                      </div>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-gray-600">No surebets found.</p>
+      )}
+    </div>
+  );
+}
